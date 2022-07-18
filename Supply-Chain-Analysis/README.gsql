@@ -1,0 +1,6 @@
+CREATE QUERY README() FOR GRAPH MyGraph {
+    PRINT "Overview of starter kit.";
+    PRINT "Query running order of starter kit";
+
+    PRINT "Query overview";
+}
