@@ -1,4 +1,4 @@
-CREATE QUERY check_stocking_amounts (VERTEX<Product> input, UINT amount) FOR GRAPH demo_graph SYNTAX V2
+CREATE QUERY check_stocking_amounts (VERTEX<Product> input_product, UINT amount) FOR GRAPH demo_graph SYNTAX V2
 {
 /*
   Get the BOM subgraph and show calculated product, ordering, and in-stock raw material amounts. 
@@ -23,13 +23,13 @@ CREATE QUERY check_stocking_amounts (VERTEX<Product> input, UINT amount) FOR GRA
   (5) Print the usedBy edge of the input product
 */
   
-  SumAccum<int> @consumed_amount;
-  SumAccum<int> @needed_amount;
-  SumAccum<int> @instock_amount;
+  SumAccum<INT> @consumed_amount;
+  SumAccum<INT> @needed_amount;
+  SumAccum<INT> @instock_amount;
 
   OrAccum @has_enough_of_material;
 
-  SetAccum<edge> @@display_set;
+  SetAccum<EDGE> @@display_set;
 
   // Start from all order history vertexes
   start (ANY) = {p_order.*};
@@ -54,7 +54,7 @@ CREATE QUERY check_stocking_amounts (VERTEX<Product> input, UINT amount) FOR GRA
   END;
 
   // start from the input product
-  start = {input};
+  start = {input_product};
   start = SELECT s
           FROM start:s
           ACCUM
