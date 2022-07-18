@@ -35,53 +35,49 @@ CREATE QUERY check_stocking_amounts (VERTEX<Product> input_product, UINT amount)
   start (ANY) = {p_order.*};
 
   // calcuate ordered amount for the finished products
-  start = SELECT t
-          FROM start:s-(prodOrder:e)-:t
+  start = SELECT t FROM start:s-(prodOrder:e)-:t
           ACCUM t.@consumed_amount += e.amount;
 
   // traverse down to the raw materials, calculate the amount of raw materials has been comsumed
-  while (start.size() > 0) do
-    start = SELECT t
-            FROM start:s-(reverseUsedBy>:e)-:t
+  WHILE (start.size() > 0) DO
+    start = SELECT t FROM start:s-(reverseUsedBy>:e)-:t
             ACCUM 
                 t.@consumed_amount += s.@consumed_amount*e.useAmount
             POST_ACCUM
                 // if there is stocking record in the history calculate its stock amount
-                CASE WHEN t.outdegree("prodStocking") > 0 THEN
-                  t.@instock_amount = SUM(t.edgeattribute("prodStocking","amount")) - t.@consumed_amount 
-                END
-    ;
+                CASE 
+                  WHEN t.outdegree("prodStocking") > 0 THEN
+                    t.@instock_amount = SUM(t.edgeattribute("prodStocking","amount")) - t.@consumed_amount 
+                END;
   END;
 
   // start from the input product
   start = {input_product};
-  start = SELECT s
-          FROM start:s
+  start = SELECT s FROM start:s
           ACCUM
-              s.@needed_amount = amount
-  ;
+              s.@needed_amount = amount;
 
-  print start;
+  PRINT start;
 
   // again from the input product traverse down to the raw material, and see 
   // if is there enough raw material in stock
   // @hasEnoughOfMaterial will be true when there is enough
-  while (start.size() > 0) do
-    start = SELECT t
-            FROM start:s-(reverseUsedBy>:e)-:t
+  WHILE (start.size() > 0) DO
+    start = SELECT t FROM start:s-(reverseUsedBy>:e)-:t
             ACCUM
                 t.@needed_amount += s.@needed_amount*e.useAmount,
                 @@display_set += e
             POST_ACCUM
-                CASE WHEN t.@instock_amount != 0 THEN
-                    CASE WHEN t.@instock_amount > (t.@needed_amount) THEN
-                      t.@has_enough_of_material += TRUE
-                    END
-                END
-    ;
+                CASE 
+                  WHEN t.@instock_amount != 0 THEN
+                    CASE 
+                      WHEN t.@instock_amount > (t.@needed_amount) THEN
+                        t.@has_enough_of_material += TRUE
+                    END;
+                END;
 
-    print start;
+    PRINT start;
   END;
 
-  print @@display_set;
+  PRINT @@display_set;
 }
