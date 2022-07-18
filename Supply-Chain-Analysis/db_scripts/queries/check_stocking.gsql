@@ -19,7 +19,7 @@ CREATE QUERY check_stocking_amounts (VERTEX<Product> input, uint amount) FOR GRA
   t.@needed_amount += s.@needed_amount*e.useAmount
   CASE WHEN t.@instock_amount != 0 THEN
     CASE WHEN t.@instock_amount > (t.@needed_amount) THEN
-      t.@has_enough_of_material += true
+      t.@has_enough_of_material += TRUE
   (5) Print the usedBy edge of the input product
 */
   
@@ -75,7 +75,7 @@ CREATE QUERY check_stocking_amounts (VERTEX<Product> input, uint amount) FOR GRA
             POST_ACCUM
                 CASE WHEN t.@instock_amount != 0 THEN
                     CASE WHEN t.@instock_amount > (t.@needed_amount) THEN
-                      t.@has_enough_of_material += true
+                      t.@has_enough_of_material += TRUE
                     END
                 END
     ;
