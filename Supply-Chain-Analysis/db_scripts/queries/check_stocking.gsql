@@ -1,4 +1,4 @@
-CREATE QUERY check_stocking_amounts (VERTEX<product> input, uint amount) FOR GRAPH demo_graph SYNTAX V2
+CREATE QUERY check_stocking_amounts (VERTEX<Product> input, uint amount) FOR GRAPH demo_graph SYNTAX V2
 {
 /*
   Get the BOM subgraph and show calculated product, ordering, and in-stock raw material amounts. 
@@ -9,79 +9,79 @@ CREATE QUERY check_stocking_amounts (VERTEX<product> input, uint amount) FOR GRA
   
   Starting from all order history vertices,
   (1) Calculate the ordered amount for finished products
-  from Start:s-(prodOrder:e)-:t
+  FROM Start:s-(prodOrder:e)-:t
   (2) Traverse from order history to calculate the amount of raw materials that have been consumed
-  t.@consumed_Amount += s.@consumed_Amount*e.useAmount
+  t.@consumed_amount += s.@consumed_amount*e.useAmount
   (3) Calculate stock amount if there is a stocking record in the order history
-  case when t.outdegree("prodStocking") > 0 then
-    t.@instock_Amount = SUM(t.edgeattribute("prodStocking","amount")) - t.@consumed_Amount
+  CASE WHEN t.outdegree("prodStocking") > 0 THEN
+    t.@instock_amount = SUM(t.edgeattribute("prodStocking","amount")) - t.@consumed_amount
   (4) Now start from the input product vertex and traverse down to the raw material to see if is there enough raw material in stock
-  t.@needed_Amount += s.@needed_Amount*e.useAmount
-  case when t.@instock_Amount != 0 then
-    case when t.@instock_Amount > (t.@needed_Amount) then
-      t.@has_Enough_Of_Material += true
+  t.@needed_amount += s.@needed_amount*e.useAmount
+  CASE WHEN t.@instock_amount != 0 THEN
+    CASE WHEN t.@instock_amount > (t.@needed_amount) THEN
+      t.@has_enough_of_material += true
   (5) Print the usedBy edge of the input product
 */
   
-  SumAccum<int> @consumed_Amount;
-  SumAccum<int> @needed_Amount;
-  SumAccum<int> @instock_Amount;
+  SumAccum<int> @consumed_amount;
+  SumAccum<int> @needed_amount;
+  SumAccum<int> @instock_amount;
 
-  OrAccum @has_Enough_Of_Material;
+  OrAccum @has_enough_of_material;
 
-  SetAccum<edge> @@display_Set;
+  SetAccum<edge> @@display_set;
 
   // Start from all order history vertexes
-  Start (ANY) = {p_order.*};
+  start (ANY) = {p_order.*};
 
   // calcuate ordered amount for the finished products
-  Start = select t
-          from Start:s-(prodOrder:e)-:t
-          accum t.@consumed_Amount += e.amount;
+  start = SELECT t
+          FROM start:s-(prodOrder:e)-:t
+          ACCUM t.@consumed_amount += e.amount;
 
   // traverse down to the raw materials, calculate the amount of raw materials has been comsumed
-  while (Start.size() > 0) do
-    Start = select t
-            from Start:s-(reverseUsedBy>:e)-:t
-            accum 
-                t.@consumed_Amount += s.@consumed_Amount*e.useAmount
-            post-accum
+  while (start.size() > 0) do
+    start = SELECT t
+            FROM start:s-(reverseUsedBy>:e)-:t
+            ACCUM 
+                t.@consumed_amount += s.@consumed_amount*e.useAmount
+            POST_ACCUM
                 // if there is stocking record in the history calculate its stock amount
-                case when t.outdegree("prodStocking") > 0 then
-                  t.@instock_Amount = SUM(t.edgeattribute("prodStocking","amount")) - t.@consumed_Amount 
-                end
+                CASE WHEN t.outdegree("prodStocking") > 0 THEN
+                  t.@instock_amount = SUM(t.edgeattribute("prodStocking","amount")) - t.@consumed_amount 
+                END
     ;
-  end;
+  END;
 
   // start from the input product
-  Start = {input};
-  Start = select s
-          from Start:s
-          accum
-              s.@needed_Amount = amount
+  start = {input};
+  start = SELECT s
+          FROM start:s
+          ACCUM
+              s.@needed_amount = amount
   ;
 
-  print Start;
+  print start;
 
   // again from the input product traverse down to the raw material, and see 
   // if is there enough raw material in stock
   // @hasEnoughOfMaterial will be true when there is enough
-  while (Start.size() > 0) do
-    Start = select t
-            from Start:s-(reverseUsedBy>:e)-:t
-            accum
-                t.@needed_Amount += s.@needed_Amount*e.useAmount,
-                @@display_Set += e
-            post-accum
-                case when t.@instock_Amount != 0 then
-                    case when t.@instock_Amount > (t.@needed_Amount) then
-                      t.@has_Enough_Of_Material += true
-                    end
-                end
+  while (start.size() > 0) do
+    start = SELECT t
+            FROM start:s-(reverseUsedBy>:e)-:t
+            ACCUM
+                t.@needed_amount += s.@needed_amount*e.useAmount,
+                @@display_set += e
+            POST_ACCUM
+                CASE WHEN t.@instock_amount != 0 THEN
+                    CASE WHEN t.@instock_amount > (t.@needed_amount) THEN
+                      t.@has_enough_of_material += true
+                    END
+                END
     ;
 
-    print Start;
-  end;
+    print start;
+  END;
 
-  print @@display_Set;
+  print @@display_set;
 }
