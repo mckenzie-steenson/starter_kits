@@ -73,7 +73,7 @@ CREATE QUERY check_stocking_amounts (VERTEX<Product> input_product, UINT amount)
                     CASE 
                       WHEN t.@instock_amount > (t.@needed_amount) THEN
                         t.@has_enough_of_material += TRUE
-                    END;
+                    END
                 END;
 
     PRINT start;
