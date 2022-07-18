@@ -1,4 +1,4 @@
-CREATE QUERY impact_analysis(SET<VERTEX<Site>> affected_sites, UINT max_depth) FOR GRAPH demo_graph SYNTAX V2
+CREATE QUERY site_product_impact_analysis(SET<VERTEX<Site>> affected_sites, UINT max_depth) FOR GRAPH demo_graph SYNTAX V2
 {
   /*
     Start from multiple input affected sites, return the impacted site-product pairs. 
