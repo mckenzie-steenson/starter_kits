@@ -59,8 +59,7 @@ CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iter
                 s.@visited_1 = TRUE,
                 s.@visited = TRUE,
                 s.@new_price = @@input_map.get(s)
-           POST-ACCUM s.price = @@input_map.get(s)
-  ;
+           POST-ACCUM s.price = @@input_map.get(s);
 
   @@depth = 1;
 
@@ -70,8 +69,9 @@ CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iter
     start1 = SELECT u FROM start1:o-(usedBy>)- product:u
              POST-ACCUM 
              // when start product is on the path of other start product
-             CASE WHEN u.@is_start == TRUE THEN
-                u.@max_depth += @@depth
+             CASE 
+               WHEN u.@is_start == TRUE THEN
+                 u.@max_depth += @@depth
              END,
              // if first time visit just pass the depth along
              CASE WHEN u.@visited_1 == FALSE THEN
