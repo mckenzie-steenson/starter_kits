@@ -1,16 +1,26 @@
 CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iteration, BOOL do_update) FOR GRAPH demo_graph SYNTAX V2
 {
   /* 
-   With a set of strings as input, in the format of PRODUCT_NAME,NEW_PRICE, recalculate the new price for the connected BOM subgraph.
-
-   This algorithm includes two phases:
-    1) traverse down to the raw materials and mark the topology order (maximum depth) for each vertex
-    2) traverse down to the raw materials again and calculate the new prices based on the topology order
+   With a set of strings as input, in the format of PRODUCT_NAME,NEW_PRICE, 
+   recalculate the new price for the connected BOM subgraph.
 
    Sample input:
     input:STEEL RODS,0.2
     max_iteration: 10
     do_update:false
+    
+    (1) Parse the input strings and put them in to a vertex set
+    FOREACH str IN input_product_name_price
+    (2) Traverse from the input vertex set 
+    (3) Traverse down to the raw materials, each vertex will only serve as start
+    SELECT u FROM start1:o-(usedBy>)- product:u
+    (4) Mark them with their maximum depth value
+    u.@max_depth += @@depth
+    (5) Start from the input vertex set again and reset the depth
+    (6) Traverse down to the raw materials again, each vertex will wait 
+    until the iteration equals to its maximum depth value stored on it 
+    to calculate its new price
+    (7) Print the new calculated prices and their associated product vertices
   */
 
   SumAccum<INT> @@depth = 0;
