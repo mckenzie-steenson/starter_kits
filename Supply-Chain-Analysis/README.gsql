@@ -1,6 +1,7 @@
-CREATE QUERY README() FOR GRAPH MyGraph {
-    PRINT "Overview of starter kit.";
-    PRINT "Query running order of starter kit";
+CREATE QUERY README() FOR GRAPH demo_graph {
+    PRINT "Suppy Chain - Inventory calculation, impact analysis, & price";
+    PRINT "predictions with Graph traversals";
+    PRINT "Investigating inventory planning and impact analysis";
 
-    PRINT "Query overview";
+    PRINT "The queries do not need to be run in a specific order.";
 }
