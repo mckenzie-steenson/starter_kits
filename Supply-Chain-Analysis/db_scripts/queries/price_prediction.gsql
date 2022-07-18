@@ -1,84 +1,82 @@
-create query price_prediction(set<string> input, int maxIteration, bool doUpdate) for graph demo_graph syntax v2
+CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iteration, BOOL do_update) FOR GRAPH demo_graph SYNTAX V2
 {
   /* 
-   With a set of string as input, in the format of PRODUCT_NAME,NEW_PRICE, recalculate the new price for the connected BOM subgraph.
+   With a set of strings as input, in the format of PRODUCT_NAME,NEW_PRICE, recalculate the new price for the connected BOM subgraph.
 
    This algorithm includes two phases:
     1) traverse down to the raw materials and mark the topology order (maximum depth) for each vertex
     2) traverse down to the raw materials again and calculate the new prices based on the topology order
 
-   Sampe input
+   Sample input:
     input:STEEL RODS,0.2
-    maxIteration: 10
-    doUpdate:false
+    max_iteration: 10
+    do_update:false
   */
 
-  SumAccum<int> @@depth = 0;
-  MaxAccum<int> @max_Depth = 0;
-  OrAccum @visited_1 = false;
+  SumAccum<INT> @@depth = 0;
+  MaxAccum<INT> @max_depth = 0;
+  OrAccum @visited_1 = FALSE;
 
-  OrAccum @is_Start = false;
+  OrAccum @is_start = FALSE;
 
-  MapAccum<string,float> @@result;
-  MapAccum<string,float> @mapping;
-  MapAccum<string,int>   @amount_Map;
-  OrAccum @visited = false;
-  SumAccum<float> @new_price;
+  MapAccum<STRING, FLOAT> @@result;
+  MapAccum<STRING, FLOAT> @mapping;
+  MapAccum<STRING, INT>   @amount_map;
+  OrAccum @visited = FALSE;
+  SumAccum<FLOAT> @new_price;
 
-  MapAccum<vertex,double> @@input_Map;
-  SetAccum<vertex> @@start_Set;
+  MapAccum<VERTEX, DOUBLE> @@input_map;
+  SetAccum<VERTEX> @@start_set;
 
-  SetAccum<edge> @@display_Set;
-  SetAccum<vertex> @@display_V;
+  SetAccum<EDGE> @@display_set;
+  SetAccum<VERTEX> @@display_vertex;
 
   String input_key = "";
   String input_val = "";
 
   // parse the input strings and put them in to a vertex set
-  foreach str in input do
+  FOREACH str IN input_product_name_price DO
     GetKeyVal(str, input_key, input_val);
-    @@input_Map += (to_vertex(input_key, "product") -> str_to_double(input_val));
-    @@start_Set += to_vertex(input_key, "product");
-  end;
+    @@input_map += (to_vertex(input_key, "product") -> str_to_double(input_val));
+    @@start_set += to_vertex(input_key, "product");
+  END;
 
-  // traverse from the input vertexe set 
-  Start = {@@start_Set};
+  // traverse from the input vertex set 
+  start = {@@start_set};
 
-  Start1 = select s from Start:s
-          accum s.@is_Start = true,
-                s.@visited_1 = true,
-                s.@visited = true,
-                s.@new_price = @@input_Map.get(s)
-          post-accum s.price = @@input_Map.get(s)
+  start1 = SELECT s FROM start:s
+           ACCUM s.@is_start = TRUE,
+                s.@visited_1 = TRUE,
+                s.@visited = TRUE,
+                s.@new_price = @@input_map.get(s)
+           POST-ACCUM s.price = @@input_map.get(s)
   ;
 
   @@depth = 1;
 
-
   // traverse down to the raw materials, each vertex will only serve as start
   // vertex for once, and mark them with their maximum depth value
-  while (Start1.size() > 0) limit maxIteration do
-    Start1 = select u
-        from Start1:o-(usedBy>)- product:u
-        post-accum 
-            // when start product is on the path of other start product
-            case when u.@is_Start == true then
-                u.@max_Depth += @@depth
-            end,
-            // if first time visit just pass the depth along
-            case when u.@visited_1 == false then
-                u.@visited_1 = true
-            // keep the largest depth
-            else 
-                u.@max_Depth += @@depth
-            end
-        having u.@max_Depth == 0;
+  WHILE (start1.size() > 0) LIMIT max_iteration DO
+    start1 = SELECT u FROM start1:o-(usedBy>)- product:u
+             POST-ACCUM 
+             // when start product is on the path of other start product
+             CASE WHEN u.@is_start == TRUE THEN
+                u.@max_depth += @@depth
+             END,
+             // if first time visit just pass the depth along
+             CASE WHEN u.@visited_1 == FALSE THEN
+                u.@visited_1 = TRUE
+             // keep the largest depth
+             ELSE 
+                u.@max_depth += @@depth
+             END
+        HAVING u.@max_depth == 0;
         @@depth += 1;
-  end;
+  END;
 
   // start from the input vertex set again
-  Start2 = select s from Start:s
-          where s.@max_Depth == 0;
+  start2 = SELECT s FROM start:s
+           WHERE s.@max_depth == 0;
 
   // reset the depth
   @@depth = 1;
@@ -86,50 +84,47 @@ create query price_prediction(set<string> input, int maxIteration, bool doUpdate
   // traverse down to the raw materials again, each vertex will wait
   // until the iteration equals to its maximum depth value stored on it 
   // to calculate its new price
-  while (Start2.size() > 0) limit maxIteration do
-    
+  WHILE (start2.size() > 0) LIMIT max_iteration DO
     print @@depth;
 
     // search first
-    Start2 = select u
-      from Start2:o -(usedBy>)- product:u
-      where (u.@max_Depth == 0 or u.@max_Depth <= @@depth) and u.@visited == false ;
+    start2 = SELECT u FROM start2:o -(usedBy>)- product:u
+             WHERE (u.@max_depth == 0 OR u.@max_depth <= @@depth) AND u.@visited == FALSE ;
 
     // then do the calculation
-    Start2 = select o
-      from Start2:o -(reverseUsedBy>:e)- product:u
-      accum case 
-          when u.@visited == true then  
+    start2 = SELECT o FROM start2:o -(reverseUsedBy>:e)- product:u
+             ACCUM CASE 
+             WHEN u.@visited == TRUE THEN  
               o.@mapping += (e.formula_order->u.@new_price)
-          else 
+             ELSE 
               o.@mapping += (e.formula_order->u.price)
-          end
-          ,o.@amount_Map += (e.formula_order->e.useAmount)
-          ,@@display_Set += e
-          ,@@display_V += u
-      post-accum
-            // dynamically evaluate the formula string stored as an attribute
-            string formula = o.formula,
-            foreach (key,val) in o.@mapping do
+             END
+             ,o.@amount_map += (e.formula_order->e.useAmount)
+             ,@@display_set += e
+             ,@@display_vertex += u
+             POST-ACCUM
+              // dynamically evaluate the formula string stored as an attribute
+              STRING formula = o.formula,
+              FOREACH (key,val) IN o.@mapping DO
               // replace the $1 string with the runtime value
-              formula = replaceStr(formula,"$"+key,to_string(val*o.@amount_Map.get(key)))
-            end,
+              formula = replaceStr(formula,"$"+key,to_string(val*o.@amount_map.get(key)))
+            END,
             o.@new_price = evaluate(formula,"double"),
 
-            log(true,o.@new_price, formula, o.formula, o.name, o.@mapping),
+            log(TRUE,o.@new_price, formula, o.formula, o.name, o.@mapping),
 
-            case when doUpdate == true then
+            CASE WHEN do_update == TRUE THEN
               o.price = o.@new_price
-            end,
-            o.@visited =true
+            END,
+            o.@visited = TRUE
     ;
 
     @@depth += 1;
-  end;
+  END;
 
-  print @@display_Set;
+  PRINT @@display_set;
 
-  final = {@@display_V};
+  final = {@@display_vertex};
 
-  print final;
+  PRINT final;
 }
