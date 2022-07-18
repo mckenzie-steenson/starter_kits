@@ -1,15 +1,26 @@
-create query show_whole_graph () for graph demo_graph syntax v2
+CREATE QUERY show_whole_graph() FOR GRAPH demo_graph SYNTAX V2
 {
+/*
+    Print all vertices and edges in the graph.
+    
+    No inputs
+    
+    Starting from all vertices in the graph,
+    (1) Print each vertex
+    (1) Traverse all edges and add to accumulator set
+    (2) Print each edge set
+
+*/
   // print all vertexes and edges
-  SetAccum<edge> @@display_Set;
+  SetAccum<edge> @@display_set;
 
-  Start = {ANY};
+  start = {ANY};
 
-  print Start;
+  print start;
 
-  Start = select s 
-          from Start:s-((prodOrder|prodStocking|usedBy>|produce>|deliver>):e)-:t
-          accum @@display_Set += e;
+  start = SELECT s 
+          FROM start:s-((prodOrder|prodStocking|usedBy>|produce>|deliver>):e)-:t
+          ACCUM @@display_set += e;
 
-  print @@display_Set;  
+  print @@display_set;  
 }
