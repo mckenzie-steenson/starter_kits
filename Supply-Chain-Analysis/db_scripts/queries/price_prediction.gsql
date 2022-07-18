@@ -74,11 +74,11 @@ CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iter
                  u.@max_depth += @@depth
              END,
              // if first time visit just pass the depth along
-             CASE WHEN u.@visited_1 == FALSE THEN
-                u.@visited_1 = TRUE
+             CASE 
+               WHEN u.@visited_1 == FALSE THEN
+                 u.@visited_1 = TRUE
              // keep the largest depth
-             ELSE 
-                u.@max_depth += @@depth
+             ELSE u.@max_depth += @@depth
              END
         HAVING u.@max_depth == 0;
         @@depth += 1;
@@ -104,14 +104,13 @@ CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iter
     // then do the calculation
     start2 = SELECT o FROM start2:o -(reverseUsedBy>:e)- product:u
              ACCUM CASE 
-             WHEN u.@visited == TRUE THEN  
-              o.@mapping += (e.formula_order->u.@new_price)
-             ELSE 
-              o.@mapping += (e.formula_order->u.price)
-             END
-             ,o.@amount_map += (e.formula_order->e.useAmount)
-             ,@@display_set += e
-             ,@@display_vertex += u
+               WHEN u.@visited == TRUE THEN  
+                 o.@mapping += (e.formula_order->u.@new_price)
+               ELSE o.@mapping += (e.formula_order->u.price)
+               END,
+             o.@amount_map += (e.formula_order->e.useAmount),
+             @@display_set += e,
+             @@display_vertex += u
              POST-ACCUM
               // dynamically evaluate the formula string stored as an attribute
               STRING formula = o.formula,
@@ -123,11 +122,11 @@ CREATE QUERY price_prediction(SET<String> input_product_name_price, INT max_iter
 
             log(TRUE,o.@new_price, formula, o.formula, o.name, o.@mapping),
 
-            CASE WHEN do_update == TRUE THEN
-              o.price = o.@new_price
+            CASE 
+              WHEN do_update == TRUE THEN
+                o.price = o.@new_price
             END,
-            o.@visited = TRUE
-    ;
+            o.@visited = TRUE;
 
     @@depth += 1;
   END;
