@@ -1,4 +1,4 @@
-CREATE QUERY check_stocking_amounts (VERTEX<Product> input, uint amount) FOR GRAPH demo_graph SYNTAX V2
+CREATE QUERY check_stocking_amounts (VERTEX<Product> input, UINT amount) FOR GRAPH demo_graph SYNTAX V2
 {
 /*
   Get the BOM subgraph and show calculated product, ordering, and in-stock raw material amounts. 
