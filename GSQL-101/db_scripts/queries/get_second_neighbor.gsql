@@ -5,7 +5,7 @@ CREATE QUERY get_second_neighbor(Vertex<Person> input_person) FOR GRAPH social S
     Sample inputs:
     input_person: 
     
-    Starting with an "input_person
+    Starting with an "input_person"
     (1) Get the friends of input person
     start:s-(friendship:e)-person:tgt
     (2) Mark the friends as visited
