@@ -1,4 +1,4 @@
-CREATE QUERY hello(vertex<person> p) FOR GRAPH social SYNTAX V2{ 
+CREATE QUERY get_person_friend(Vertex<Person> p) FOR GRAPH social SYNTAX V2{ 
   start = {p};
   result = SELECT tgt
            FROM start:s-(friendship:e)-person:tgt;
