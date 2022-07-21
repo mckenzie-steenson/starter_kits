@@ -1,7 +1,23 @@
-CREATE QUERY hello2(vertex<person> p) FOR GRAPH social SYNTAX V2{ 
+CREATE QUERY get_second_neighbor(Vertex<Person> input_person) FOR GRAPH social SYNTAX V2{ 
+/*
+    Get the second neighbors and their average age of the input person.
+    
+    Sample inputs:
+    input_person: 
+    
+    Starting with an "input_person
+    (1) Get the friends of input person
+    start:s-(friendship:e)-person:tgt
+    (2) Mark the friends as visited
+    (3) From the friends, mark the people that have not been visited
+    first_neighbors-(:e)-:tgt WHERE tgt.@visited == false
+    (4) Accumulate the average age of the new friends
+    (5) Print the second neighbors and their average age
+*/
+  
   OrAccum  @visited = false;
   AvgAccum @@avg_age;
-  start = {p};
+  start = {input_person};
 
   first_neighbors = SELECT tgt
                    FROM start:s-(friendship:e)-person:tgt
