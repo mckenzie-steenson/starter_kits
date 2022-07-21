@@ -1,0 +1,6 @@
+CREATE QUERY README() FOR GRAPH social {
+    PRINT "Social relationships - 1 and 2 hop queries";
+    PRINT "GSQL 101";
+
+    PRINT "The queries do not need to be run in a specific order.";
+}
