@@ -4,7 +4,7 @@ CREATE QUERY get_person_friend(Vertex<Person> p) FOR GRAPH social SYNTAX V2
     Get the friends of the input person.
     
     Sample inputs:
-    input_person: 
+    input_person: Nancy | Kevin | Jenny
     
     Starting with an "input_person"
     (1) Get the friends of input person
