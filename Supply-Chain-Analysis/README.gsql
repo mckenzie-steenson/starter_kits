@@ -1,7 +1,10 @@
 CREATE QUERY README() FOR GRAPH demo_graph {
-    PRINT "Suppy Chain - Inventory calculation, impact analysis, & price";
-    PRINT "predictions with Graph traversals";
-    PRINT "Investigating inventory planning and impact analysis";
-
-    PRINT "The queries do not need to be run in a specific order.";
+    STRING graph_description = "Example covering inventory planning and impact analysis";
+    STRING query_order = "No Order";
+    STRING check_stocking_amounts = "check_stocking_amounts.gsql - Get the BOM subgraph and show calculated product, ordering, and in-stock raw material amounts.";
+    STRING price_prediciton = "price_prediction.gsql - With a set of strings as input, in the format of PRODUCT_NAME,NEW_PRICE, recalculate the new price for the connected BOM subgraph.";
+    STRING show_whole_graph = "show_whole_graph.gsql - Print all vertices and edges in the graph.";
+    STRING site_product_impact_analysis = "site_product_impact_analysis.gsql - Start from multiple input affected sites, return the impacted site-product pairs.";
+    
+    PRINT graph_description, query_order, check_stocking_amounts, price_prediciton, show_whole_graph, site_product_impact_analysis;    
 }
