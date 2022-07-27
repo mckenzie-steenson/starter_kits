@@ -1,42 +1,51 @@
-CREATE QUERY get_account_interest(vertex<Account> input_acc, int k) FOR GRAPH Entity_Resolution { 
-	/**********************************************************
-	 * Example parameters:
-	 *   Acount : 407
-	 *   k : 5
-	 **********************************************************/
+CREATE QUERY get_account_interest(vertex<Account> input_account, int k) FOR GRAPH Entity_Resolution { 
+/*
+    Sample inputs:
+    input_account: 407k
+    k: 5
+    
+    Starting with an "input_account",
+    (1) Find all connected accounts and mark them as visited
+    SELECT t FROM start:s-(Same_Owner:e)-:t
+    (2) Start from connected accounts and find vertices connected by Has_Play_Event edge
+    (3) Start from vertices that have the play event edge and find vertices connected by Play_Video
+    (4) Start from the new set of videos and find their genres and keywords
+    SELECT t FROM videos:s-((Has_Genre|Has_Keyword):e)-:t 
+    (5) PRINT the all accounts videos and the related keywords and genres
+*/
 	
-  	SetAccum<VERTEX<Account>> @@connected_accounts;
-	MapAccum<VERTEX, int> @map;
-	OrAccum @visited;
-	SumAccum<uint> @cnt;
-	ListAccum<EDGE> @@list;
+  SetAccum<VERTEX<Account>> @@connected_accounts;
+  MapAccum<VERTEX, INT> @map;
+  OrAccum @visited;
+  SumAccum<UINT> @cnt;
+  ListAccum<EDGE> @@list;
 	
-	start = {input_acc};
-	
-	WHILE start.size() > 0 DO
-	  start = SELECT t FROM start:s-(Same_Owner:e)-:t
-	          WHERE t.@visited == false
-	          POST-ACCUM @@connected_accounts += t, t.@visited = true;
-	END;
-	
-	start = @@connected_accounts;
-	
-	paly_event = SELECT t FROM start:s-(Has_Play_Event:e)-:t ACCUM @@list += e;
-	
-	videos = SELECT t FROM paly_event:s-(Play_Video:e)-:t ACCUM t.@cnt += 1, @@list += e;
-	
-	genre_key_w = 	SELECT t FROM videos:s-((Has_Genre|Has_Keyword):e)-:t 
-	            	ACCUM t.@cnt += s.@cnt, @@list += e;
-	
-	videos = SELECT t from genre_key_w:s-((Has_Genre|Has_Keyword):e)-:t 
-	         WHERE t.@cnt == 0	
-	         ACCUM t.@cnt += s.@cnt, t.@map += (s->s.@cnt)
-	         ORDER BY t.@cnt DESC LIMIT k;
-	
-	print videos;
-	
-	videos = SELECT s from videos:s-((Has_Genre|Has_Keyword):e)-:t
-	         ACCUM @@list += e;
-	
-	print @@list;
+  start = {input_account};
+
+  WHILE start.size() > 0 DO
+    start = SELECT t FROM start:s-(Same_Owner:e)-:t
+            WHERE t.@visited == FALSE
+            POST-ACCUM @@connected_accounts += t, t.@visited = TRUE;
+  END;
+
+  start = @@connected_accounts;
+
+  paly_event = SELECT t FROM start:s-(Has_Play_Event:e)-:t ACCUM @@list += e;
+
+  videos = SELECT t FROM paly_event:s-(Play_Video:e)-:t ACCUM t.@cnt += 1, @@list += e;
+
+  genre_key_w = SELECT t FROM videos:s-((Has_Genre|Has_Keyword):e)-:t 
+              	ACCUM t.@cnt += s.@cnt, @@list += e;
+
+  videos = SELECT t from genre_key_w:s-((Has_Genre|Has_Keyword):e)-:t 
+           WHERE t.@cnt == 0	
+           ACCUM t.@cnt += s.@cnt, t.@map += (s->s.@cnt)
+           ORDER BY t.@cnt DESC LIMIT k;
+
+  print videos;
+
+  videos = SELECT s FROM videos:s-((Has_Genre|Has_Keyword):e)-:t
+           ACCUM @@list += e;
+
+  print @@list;
 }
