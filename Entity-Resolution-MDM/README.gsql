@@ -1,0 +1,10 @@
+CREATE QUERY README() FOR GRAPH demo_graph {
+    STRING graph_description = "Identify, link and merge entities such as customers with analysis of attributes and relationships";
+    STRING query_order = "1. account_matching 2. main_query, no order for the rest of the queries";
+    STRING account_matching = "account_matching.gsql - This query detects and links for one account based on edges and thresold amount.";
+    STRING get_account_interest = "get_account_interest.gsql - Get videos related to the interests of the input account.";
+    STRING main_query = "main_query.gsql - This query links all potential same-owner accounts.";
+    STRING output_file = "output_file.gsql - Write the vertices to an external CSV file.";
+    
+    PRINT graph_description, query_order, account_matching, get_account_interest, main_query, output_file;
+}
