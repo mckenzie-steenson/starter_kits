@@ -1,5 +1,7 @@
 CREATE QUERY get_account_interest(vertex<Account> input_account, int k) FOR GRAPH Entity_Resolution { 
 /*
+    Get videos related to the interests of the input account.
+    
     Sample inputs:
     input_account: 407k
     k: 5
