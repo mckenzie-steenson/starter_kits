@@ -1,32 +1,37 @@
-CREATE QUERY account_matching(vertex<Account> input_acc, float threshold) FOR GRAPH Entity_Resolution { 
-	/*******************************************************
-	 * This query only detects and links for one account
-	 * To link the entire graph, run main_query instead
-	 * 
-	 * Example parameters: 
-	 *   Account : 407
-	 *   threshold : 0.6
-	 *******************************************************/
+CREATE QUERY account_matching(VERTEX<Account> input_account, FLOAT threshold) FOR GRAPH Entity_Resolution { 
+/*
+    This query detects and links for one account based on edges and thresold amount.
+    (To link the entire graph, run main_query after installing this query)
+    
+    Sample inputs: 
+    input_account : 407
+    threshold : 0.6
+    
+    Starting with an "input_account",
+    (1) Select all the connected attributes of the input_account
+    (2) From the attributes of the first input account, select the related vertices from the same edges
+    SELECT t FROM attributes-((Has_IP|Has_Email|Has_Last_Name|Has_Phone|Has_Address|Has_Device):e)-:t
+    (3) Printthe related accounts
+*/	
+    SumAccum<float> @score;
 	
-	SumAccum<float> @score;
+    start = {input_acc};
 	
-	start = {input_acc};
-	
-	attributes = SELECT t FROM start-((Has_IP|Has_Email|Has_Last_Name|Has_Phone|Has_Address|Has_Device):e)-:t;
-	
-	related_accs = SELECT t FROM attributes-((Has_IP|Has_Email|Has_Last_Name|Has_Phone|Has_Address|Has_Device):e)-:t
-	               WHERE t != input_acc
-	               ACCUM CASE e.type
-	                       WHEN "Has_IP" THEN t.@score += 0.2
-	                       WHEN "Has_Email" THEN t.@score += 0.3
-	                       WHEN "Has_Last_Name" THEN t.@score += 0.3
-	                       WHEN "Has_Phone" THEN t.@score += 0.2
-	                       WHEN "Has_Address" THEN t.@score += 0.1
-	                       WHEN "Has_Device" THEN t.@score += 0.2
-	                     END
-	               POST-ACCUM 
-	                 CASE WHEN t.@score > threshold THEN
-	                   INSERT INTO Same_Owner VALUES (input_acc, t, t.@score) 
-	                 END;
-  PRINT related_accs;
+    attributes = SELECT t FROM start-((Has_IP|Has_Email|Has_Last_Name|Has_Phone|Has_Address|Has_Device):e)-:t;
+    
+    related_accs = SELECT t FROM attributes-((Has_IP|Has_Email|Has_Last_Name|Has_Phone|Has_Address|Has_Device):e)-:t
+                   WHERE t != input_acc
+                   ACCUM CASE e.type
+                           WHEN "Has_IP" THEN t.@score += 0.2
+                           WHEN "Has_Email" THEN t.@score += 0.3
+                           WHEN "Has_Last_Name" THEN t.@score += 0.3
+                           WHEN "Has_Phone" THEN t.@score += 0.2
+                           WHEN "Has_Address" THEN t.@score += 0.1
+                           WHEN "Has_Device" THEN t.@score += 0.2
+                         END
+                   POST-ACCUM 
+                     CASE WHEN t.@score > threshold THEN
+                       INSERT INTO Same_Owner VALUES (input_acc, t, t.@score) 
+                     END;
+    PRINT related_accs;
 }
