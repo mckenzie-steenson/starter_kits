@@ -1,6 +1,8 @@
 CREATE QUERY README() FOR GRAPH social {
-    PRINT "Social relationships - 1 and 2 hop queries";
-    PRINT "GSQL 101";
-
-    PRINT "The queries do not need to be run in a specific order.";
+    STRING graph_description = "Introduction to TigerGraph’s powerful graph query language";
+    STRING query_order = "No order";
+    STRING get_person_friend = "get_person_friend.gsql - Get the friends of the input person.";
+    STRING get_second_neighbor = "get_second_neighbor.gsql - Get the second neighbors and their average age of the input person.";
+    
+    PRINT graph_description, query_order, get_person_friend, get_second_neighbor;
 }
