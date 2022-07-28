@@ -1,37 +1,47 @@
-CREATE QUERY recommend_movies(vertex<person> p, int k1, int k2) FOR GRAPH MyGraph SYNTAX V2{
- OrAccum @rated;
- SumAccum<double> @rating_ByP;
- SumAccum<double> @length_ASqr, @length_BSqr, @dot_ProductAB;
- SumAccum<double> @cosine_Similarity;
- AvgAccum @recommend_Score;
+CREATE QUERY recommend_movies(VERTEX<person> input_person, INT k1, INT k2) FOR GRAPH MyGraph SYNTAX V2{
+/*
+    Recommend movies for the input user based on what movies other similar users like. 
+    
+    Sample inputs:
+    input_person: 183
+    k1:
+    k2:
+    
+    Starting with the "input_person",
+    (1) Find all movies input_person has rated
+    (2) Find al persons that have rated the same movies as input_person
+    (3) Based on the movie ratings, find the k1 persons that have most similar tastes with input_person
+    (4) Find all movies these k1 persons have rated that input_person hasn't yet rated
+    (5) Recommend the top k2 movies with the highest average rating by the k1 persons
+    
+*/
 
- PSet = { p };
-	
- PRatedMovies =
-    SELECT m
-    FROM PSet-(rate>:r)-movie:m
-    ACCUM m.@rated = true, m.@rating_ByP = r.rating;
-
- PeopleRatedSameMovies =
-    SELECT tgt
-    FROM PRatedMovies:m-(<rate:r)-person:tgt
-    WHERE tgt != p
-    ACCUM tgt.@length_ASqr += m.@rating_ByP * m.@rating_ByP,
-          tgt.@length_BSqr += r.rating * r.rating,
-          tgt.@dot_ProductAB += m.@rating_ByP * r.rating
-    POST-ACCUM
-          tgt.@cosine_Similarity =
-            tgt.@dot_ProductAB / (sqrt(tgt.@length_ASqr) * sqrt(tgt.@length_BSqr))
-    ORDER BY tgt.@cosine_Similarity DESC
-    LIMIT k1;
-
-  RecommendedMovies =
-    SELECT m
-    FROM PeopleRatedSameMovies-(rate>:r)-movie:m
-    WHERE m.@rated == false
-    ACCUM m.@recommend_Score += r.rating
-    ORDER BY m.@recommend_Score DESC
-    LIMIT k2;
-
-  PRINT RecommendedMovies;
+    OrAccum @rated;
+    SumAccum<DOUBLE> @rating_by_people;
+    SumAccum<DOUBLE> @length_as_qr, @length_bs_qr, @dot_product_ab;
+    SumAccum<DOUBLE> @cosine_similarity;
+    AvgAccum @recommend_Score;
+   
+    start = { input_person };
+   	
+    People_Rated_Movies = SELECT m FROM start-(rate>:r)-movie:m
+       		          ACCUM m.@rated = TRUE, m.@rating_by_people = r.rating;
+   
+    People_Rated_Same_Movies = SELECT tgt FROM People_Rated_Movies:m-(<rate:r)-person:tgt
+       			       WHERE tgt != p
+       		               ACCUM tgt.@Sqr += m.@rating_by_people * m.@rating_by_people,
+             		    	     tgt.@length_bs_qr += r.rating * r.rating,
+                                        tgt.@dot_product_ab += m.@rating_by_people * r.rating
+       			       POST-ACCUM
+             			     tgt.@cosine_similarity = tgt.@dot_product_ab / (sqrt(tgt.@length_as_qr) * sqrt(tgt.@length_bs_qr))
+       			       ORDER BY tgt.@cosine_similarity DESC
+                               LIMIT k1;
+   
+    Recommended_Movies = SELECT m FROM People_Rated_Same_Movies-(rate>:r)-movie:m
+       		         WHERE m.@rated == FALSE
+       		         ACCUM m.@recommend_Score += r.rating
+       		         ORDER BY m.@recommend_Score DESC
+      		         LIMIT k2;
+   
+    PRINT Recommended_Movies;
 }
