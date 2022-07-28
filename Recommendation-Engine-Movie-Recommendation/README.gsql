@@ -1,0 +1,7 @@
+CREATE QUERY README() FOR GRAPH MyGraph {
+    STRING graph_description = "Graph-based movie recommendation engine built with public data.";
+    STRING query_order = "No order";
+    STRING recommend_movies = "recommend_movies.gsql - Recommend movies for the input user based on what movies other similar users like.";
+    
+    PRINT graph_description, query_order, srecommend_movies;
+}
