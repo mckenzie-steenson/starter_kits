@@ -1,4 +1,4 @@
-CREATE QUERY README() FOR GRAPH demo_graph {
+CREATE QUERY README() FOR GRAPH Entity_Resolution {
     STRING graph_description = "Identify, link and merge entities such as customers with analysis of attributes and relationships";
     STRING query_order = "1. account_matching 2. main_query, no order for the rest of the queries";
     STRING account_matching = "account_matching.gsql - This query detects and links for one account based on edges and thresold amount.";
