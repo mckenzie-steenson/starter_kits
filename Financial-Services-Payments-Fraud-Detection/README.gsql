@@ -1,0 +1,10 @@
+CREATE QUERY README() FOR GRAPH demo_graph {
+
+    STRING graph_description = "Detect and stop fraudulent payments in real-time.";
+    STRING query_order = "No order";
+    STRING common_customers = "common_customers.gsql - Get common customers between two merchants by traversing similar payments.";
+    STRING kHop_flagged = "kHop_flagged.gsql - From an account, payment, or user, find all payments, devices or users with a low trust score.";
+    STRING recipient_user_fraudulent_device = "recipient_user_fraudulent_device.gsql - This query prints out the subgraphs of payments whose phone number is attached to the device previously involved in fraud along with the fraudulent device.";
+    
+    PRINT graph_description, query_order, common_customers, kHop_flagged, recipient_user_fraudulent_device;
+}
