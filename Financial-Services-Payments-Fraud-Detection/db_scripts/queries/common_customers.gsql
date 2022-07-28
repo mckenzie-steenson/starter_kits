@@ -19,7 +19,7 @@ CREATE QUERY common_customers(VERTEX<merchant_account> merchant1, VERTEX<merchan
 */
     
     OrAccum @visited;
-    SetAccum<edge> @@edge_set;
+    SetAccum<EDGE> @@edge_set;
     mer1 =  {merchant1};
     mer2 =  {merchant2};
 
