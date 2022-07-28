@@ -1,7 +1,6 @@
 CREATE QUERY kHop_flagged(VERTEX input, INT k) FOR GRAPH MyGraph { 
 /*
-    From an account, payment, or user, find all payments, devices or users with a low trust score
-	  We start with a single vertex of one of these types:
+    From an account, payment, or user, find all payments, devices or users with a low trust score.
 	  
     Sample inputs:
     input: payment1
