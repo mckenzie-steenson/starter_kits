@@ -1,0 +1,30 @@
+CREATE QUERY kHop_flagged(VERTEX input, INT k) FOR GRAPH MyGraph { 
+/*
+    From an account, payment, or user, find all payments, devices or users with a low trust score
+	  We start with a single vertex of one of these types:
+	  
+    Sample inputs:
+    input: payment1
+    k: 4
+   
+    Starting from "input",
+    (1) Traverse all edges connected to the input vertex
+    (2) Accumulate edge if the trust score is less than 0.1 and the vertex type is a device, payment or user
+    (3) Print all flagged verticies 
+*/
+
+  SetAccum<VERTEX> @@warnings;	
+	
+	start (ANY) = {input};
+	
+	FOREACH i IN RANGE [1,k] DO 
+	  start = SELECT t FROM start:s-((authenticated_by_num | reverse_authenticated_by_num | sets_up | reverse_sets_up | authenticated_by_email | reverse_authenticated_by_email | used_with | reverse_used_with | associated_with | reverse_associated_with | sends | reverse_sends | receives | reverse_receives | user_account_bank | reverse_user_account_bank | merchant_account_device | reverse_merchant_account_device | receives_pmnt | reverse_receives_pmnt | sends_pmnt | reverse_sends_pmnt | merchant_account_bank | reverse_merchant_account_bank):e)-:t
+	          ACCUM 
+	            IF t.trust_score < 0.1 AND (t.type == "device" OR t.type == "payment" OR t.type == "user") THEN
+	              @@warnings += t
+              END;
+	END;
+
+	flagged = @@warnings;
+	PRINT flagged;
+}
