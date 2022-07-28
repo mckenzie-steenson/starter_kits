@@ -1,4 +1,4 @@
-CREATE QUERY README() FOR GRAPH demo_graph {
+CREATE QUERY README() FOR GRAPH MyGraph {
 
     STRING graph_description = "Detect and stop fraudulent payments in real-time.";
     STRING query_order = "No order";
