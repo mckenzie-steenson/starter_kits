@@ -1,4 +1,4 @@
-CREATE QUERY transferred_amount (VERTEX<User> input_sender, INT num_hops=4,
+CREATE QUERY transferred_amount(VERTEX<User> input_sender, INT num_hops=4,
     DATETIME start_date = to_dateTime("2000/12/31"), DATETIME end_date = 
     to_dateTime("2020/12/31")) FOR GRAPH AntiFraud SYNTAX V2 {
 /*
