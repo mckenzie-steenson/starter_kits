@@ -6,38 +6,43 @@ CREATE QUERY addresses_with_most_case_reports() FOR GRAPH connectivity API("v2")
     No input
     
     Starting from a Person vertex,
-    (1)
+    (1) Accumulate the person vertices to a vertex SetAccum to the address vertex
+    (2) Set the SumAccum of the address vertex to the size of the vertex set in step 1 (number of people at the addresses)
+    (3) Add the address vertex and the number of people at the addresses to a HeapAccum
+    (4) Pop each vertex out of the HeapAccum and add it to a vertex set
+    (5) Select the same vertices from step 1 to print in a subgraph
+    (6) Print the top 10 addresses with the most number of case reports 
 */
-    TYPEDEF TUPLE<VERTEX<Address> v, DOUBLE f0> Order_Tuple_3;
+    TYPEDEF TUPLE<VERTEX<Address> v, DOUBLE f0> Top_Ten_Tuple;
 
-    SetAccum<VERTEX> @agg_3_number_of_people_with_case_reports_set;
-    SumAccum<INT> @agg_3_number_Of_people_with_case_reports;
-    HeapAccum<Order_Tuple_3>(10, f0 DESC) @@order_heap_3;
-    SetAccum<VERTEX<Address>> @@order_vertex_set_3;
-    SetAccum<EDGE> @@final_edge_set_5;
-    SetAccum<VERTEX<Person>> @@final_vertex_set_2;
-    SetAccum<VERTEX<Address>> @@final_vertex_set_3;
+    SetAccum<VERTEX> @number_of_people_with_case_reports_set;
+    SumAccum<INT> @number_Of_people_with_case_reports;
+    HeapAccum<Top_Ten_Tuple>(10, f0 DESC) @@ordered_top_ten_heap;
+    SetAccum<VERTEX<Address>> @@ordered_top_ten_set;
+    SetAccum<EDGE> @@final_edge_set_has_address;
+    SetAccum<VERTEX<Person>> @@final_vertex_set_person;
+    SetAccum<VERTEX<Address>> @@final_vertex_set_address;
 
-    vertex_set_3 = SELECT alias_schema_3 FROM Person:p -(hasCaseReport:alias_schema_4)- CaseReport:alias_schema_1,
-                                              Person:p -(hasHomeAddress:alias_schema_5)- Address:alias_schema_3
-                   ACCUM alias_schema_3.@agg_3_number_of_people_with_case_reports_set += p
-                   POST-ACCUM alias_schema_3.@agg_3_number_Of_people_with_case_reports = alias_schema_3.@agg_3_number_of_people_with_case_reports_set.size(),
-                      @@order_heap_3 += Order_Tuple_3(alias_schema_3, alias_schema_3.@agg_3_number_Of_people_with_case_reports);
-                   WHILE (@@order_heap_3.size() > 0) DO
-                     @@order_vertex_set_3 += @@order_heap_3.pop().v;
+    vertex_set_3 = SELECT a FROM Person:p -(hasCaseReport:cr_edge)- CaseReport:cr,
+                                              Person:p -(hasHomeAddress:ha_edge)- Address:a
+                   ACCUM a.@number_of_people_with_case_reports_set += p
+                   POST-ACCUM a.@number_Of_people_with_case_reports = a.@number_of_people_with_case_reports_set.size(),
+                      @@ordered_top_ten_heap += Top_Ten_Tuple(a, a.@number_Of_people_with_case_reports);
+                   WHILE (@@ordered_top_ten_heap.size() > 0) DO
+                     @@ordered_top_ten_set += @@ordered_top_ten_heap.pop().v;
                    END;
     
-    vertex_set_3 = { @@order_vertex_set_3 };
+    vertex_set_3 = { @@ordered_top_ten_set };
 
-    vertex_set_3 = SELECT alias_schema_3 FROM Person:p -(hasCaseReport:alias_schema_4)- CaseReport:alias_schema_1,
-                                             Person:p -(hasHomeAddress:alias_schema_5)- vertex_set_3:alias_schema_3
-                  ACCUM @@final_edge_set_5 += alias_schema_5
-                  POST-ACCUM @@final_vertex_set_2 += p
-                  POST-ACCUM @@final_vertex_set_3 += alias_schema_3;
+    vertex_set_3 = SELECT a FROM Person:p -(hasCaseReport:cr_edge)- CaseReport:cr,
+                                             Person:p -(hasHomeAddress:ha_edge)- vertex_set_3:a
+                  ACCUM @@final_edge_set_has_address += ha_edge
+                  POST-ACCUM @@final_vertex_set_person += p
+                  POST-ACCUM @@final_vertex_set_address += a;
 
-    PRINT @@final_edge_set_5;
+    PRINT @@final_edge_set_has_address;
 
-    vertex_set_2 = { @@final_vertex_set_2 };
+    vertex_set_2 = { @@final_vertex_set_person };
     PRINT vertex_set_2[
       vertex_set_2.fullName AS fullName,
       vertex_set_2.dob AS dob,
@@ -46,9 +51,9 @@ CREATE QUERY addresses_with_most_case_reports() FOR GRAPH connectivity API("v2")
       vertex_set_2.ethic_group AS ethic_group
     ];
 
-    vertex_set_3 = { @@final_vertex_set_3 };
+    vertex_set_3 = { @@final_vertex_set_address };
     PRINT vertex_set_3[
-      vertex_set_3.@agg_3_number_Of_people_with_case_reports AS numberOfPeopleWithCaseReports
+      vertex_set_3.@number_Of_people_with_case_reports AS numberOfPeopleWithCaseReports
     ];
 
 }
