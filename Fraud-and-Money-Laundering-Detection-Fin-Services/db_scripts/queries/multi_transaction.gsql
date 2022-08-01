@@ -1,4 +1,4 @@
-CREATE QUERY multi_transaction (VERTEX<Transaction> input_transaction) FOR GRAPH AntiFraud SYNTAX V2 {
+CREATE QUERY multi_transaction(VERTEX<Transaction> input_transaction) FOR GRAPH AntiFraud SYNTAX V2 {
 /*
     Given a transaction, this query finds the network of users related to the sender
     and the network of users related to the receiver then finds all transactions between the two networks.
