@@ -1,35 +1,40 @@
-CREATE QUERY person_same_as_who(VERTEX<Person> source, INT topK) FOR GRAPH connectivity SYNTAX V2 {
+CREATE QUERY person_same_as_who(VERTEX<Person> input_person, INT top_k) FOR GRAPH connectivity SYNTAX V2 {
 /* 
-  --- Dataset has been shrunk on Nov.20th,2020 ---
+    This query calculates the Jaccard Similarity between a given person vertex and every other vertic.
+    (A similarity edge with one FLOAT attribute in the schema is required for this version.)
+    
+    Samples:
+    input_person：55521 ; top_k:5
+    input_person：127463 ; top_k:10
+    input_person：174490 ; top_k:15
+    
+    Jaccard similarity =
+    (1) The JSON and FILE version keeps the top k pairs of vertices. The result in FILE version is not in order.
+    (2) The Attribute version insert edges between the pairs, with the score as an edge attribute
+        
+        
+    Starting from the "input_person",
+    (1) Calculate the outdegree along the hasBusRide, hasTrainRide, and hasBankAccount edges
+    (2) Calculate the Jaccard similarity score, intersection_size / (size_A + size_B - intersection_size) of the vertices connected to the input person
+    (3) Print the "input_person" and the topk most similar people 
 
-  Samples:
-  source：55521 ; Topk:5
-  source：127463 ; Topk:10
-  source：174490 ; Topk:15
-  This query calculates the Jaccard Similarity between a given vertex and every other vertex.
-  Jaccard similarity = intersection_size / (size_A + size_B - intersection_size)
-  1. The JSON and FILE version keeps the top k pairs of vertices. The result in FILE version is not in order.
-  2. The Attribute version insert edges between the pairs, with the score as an edge attribute.
-   A similarity edge with one FLOAT attribute in the schema is required for this version.
 */
     SumAccum<INT> @intersection_size, @@set_size_A, @set_size_B;
     SumAccum<FLOAT> @similarity;
-    Start (ANY) = {source};
-    Start = SELECT s
-    FROM Start:s
-    ACCUM @@set_size_A += s.outdegree("hasBusRide"), @@set_size_A += s.outdegree("hasTrainRide"), @@set_size_A += s.outdegree("hasBankAccount");
+    start (ANY) = {input_person};
+    start = SELECT s FROM start:s
+            ACCUM @@set_size_A += s.outdegree("hasBusRide"), @@set_size_A += s.outdegree("hasTrainRide"), @@set_size_A += s.outdegree("hasBankAccount");
 
-    Subjects = SELECT t
-               FROM Start:s-((hasBusRide|hasTrainRide|hasFlight):e)-:t;
+    subjects = SELECT t
+               FROM start:s-((hasBusRide|hasTrainRide|hasFlight):e)-:t;
 
-    sameAsSet = SELECT t
-             FROM Subjects:s -((hasBusRide|hasTrainRide|hasFlight):e)- Person:t
-             WHERE t != source
-             ACCUM t.@intersection_size += 1,
-                   t.@set_size_B = t.outdegree("hasBusRide") + t.outdegree("hasTrainRide")+ t.outdegree("hasFlight")
-             POST-ACCUM t.@similarity = t.@intersection_size*1.0/(@@set_size_A + t.@set_size_B - t.@intersection_size)
-             ORDER BY t.@similarity DESC
-             LIMIT topK;
+    same_as_set = SELECT t FROM subjects:s -((hasBusRide|hasTrainRide|hasFlight):e)- Person:t
+                  WHERE t != input_person
+                  ACCUM t.@intersection_size += 1,
+                        t.@set_size_B = t.outdegree("hasBusRide") + t.outdegree("hasTrainRide")+ t.outdegree("hasFlight")
+                  POST-ACCUM t.@similarity = t.@intersection_size*1.0/(@@set_size_A + t.@set_size_B - t.@intersection_size)
+                  ORDER BY t.@similarity DESC
+                  LIMIT top_k;
 
-    PRINT Start, sameAsSet;
+    PRINT start, same_as_set;
 }
