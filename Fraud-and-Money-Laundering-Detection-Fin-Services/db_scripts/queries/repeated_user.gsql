@@ -1,20 +1,20 @@
-CREATE QUERY repeated_user (VERTEX<User> recipient)
-FOR GRAPH AntiFraud syntax v2 {
+CREATE QUERY repeated_user(VERTEX<User> recipient) FOR GRAPH AntiFraud syntax V2 {
 /*
-   Given a money recipient, this query discovers whether there exists 
-   relationships among those people who have sent money to this receiver. 
-   
-    1) Starting from a receiver "recipient", find all of her transactions
-    receiving money.
-    2) Find all the senders from the transactions collected in step 1)
-    3) Start from the senders in step 2), go as far as 8 steps from each 
+    Given a money recipient, this query discovers whether there exists 
+    relationships among those people who have sent money to this receiver. 
+    
+    Sample input:
+    recipient: 1223
+    
+    Starting from a receiver "recipient", 
+    (1) Find all of the transactions receiving money.
+    (2) Find all the senders from the transactions collected in step (1)
+    (3) Start from the senders in step 2), go as far as 8 steps from each 
     sender, find all the senders that are connected to other senders 
     by a path made of Device_Token, Payment_Instrument, and Users.
-    4) Detect all the transactions started by the senders found in step 3) 
+    (4) Detect all the transactions started by the senders found in step (3) 
     and received by the input user.
-
-    Sample input:
-    receiver = 1223
+    
 */
   
     SumAccum<INT> @num_messages_received;
@@ -25,70 +25,64 @@ FOR GRAPH AntiFraud syntax v2 {
     SetAccum<EDGE> @@edges_to_display;
     INT MAX_HOPS = 8;
  
-    Seed (ANY) = {recipient};
+    start (ANY) = {recipient};
     
     // Prep 1: Get all transactions the recipient get money from
-    Transactions = SELECT t 
-        FROM Seed:s - (User_Receive_Transaction>:e) - :t
-        ACCUM @@edges_to_display += e
-        POST-ACCUM t.@is_sender += TRUE;
+    transactions = SELECT t FROM start:s - (User_Receive_Transaction>:e) - :t
+                   ACCUM @@edges_to_display += e
+                   POST-ACCUM t.@is_sender += TRUE;
 
     // Prep 2: Get all senders related to the above transactions (Prep 1) 
-    From_senders (ANY) = SELECT u
-        FROM Transactions:t - (<User_Transfer_Transaction:e) - :u
-        ACCUM @@edges_to_display += e
-        POST-ACCUM 
-            u.@num_messages_received += 1,
-            u.@is_sender += TRUE,
-            u.@max = u,
-            u.@min = u;
+    from_senders (ANY) = SELECT u FROM transactions:t - (<User_Transfer_Transaction:e) - :u
+                         ACCUM @@edges_to_display += e
+                         POST-ACCUM 
+                             u.@num_messages_received += 1,
+                             u.@is_sender += TRUE,
+                             u.@max = u,
+                             u.@min = u;
 
     // 1. Traverse 8 steps from the senders discovered in Prep 2.
-    WHILE From_senders.size() > 0 LIMIT MAX_HOPS DO
-        From_senders = SELECT t
-            FROM From_senders:s - ((User_to_Device|User_to_Payment):e) - :t
-            WHERE t.@num_messages_received == 0
-            ACCUM
-                t.@num_messages_received += 1,
-                /* By accumulating min and max of vertex IDs from source to
-                  target, we record a signature of a directed path.
-                */
-                t.@min += s.@min,
-                t.@max += s.@max
-            POST-ACCUM
-                CASE WHEN
-                  // Test whether t was reached from 2 different paths
-                    t.@num_messages_received > 1 AND t.@min != t.@max
-                THEN
-                    @@linked_joint_set += t
-                END;   
+    WHILE from_senders.size() > 0 LIMIT MAX_HOPS DO
+        from_senders = SELECT t FROM from_senders:s - ((User_to_Device|User_to_Payment):e) - :t
+                       WHERE t.@num_messages_received == 0
+                       ACCUM
+                           t.@num_messages_received += 1,
+                           /* By accumulating min and max of vertex IDs from source to
+                             target, we record a signature of a directed path.
+                           */
+                           t.@min += s.@min,
+                           t.@max += s.@max
+                       POST-ACCUM
+                           CASE WHEN
+                             // Test whether t was reached from 2 different paths
+                               t.@num_messages_received > 1 AND t.@min != t.@max
+                           THEN
+                               @@linked_joint_set += t
+                           END;   
     END;
 
-    From_joint_set = {@@linked_joint_set};
+    from_joint_set = {@@linked_joint_set};
 
     // 2. Trace back to the linked senders discovered in Step 1.
-    WHILE From_joint_set.size() > 0 DO
-        From_joint_set = SELECT t
-            FROM From_joint_set:s - ((User_to_Device|User_to_Payment):e) - :t
-            WHERE t.@num_messages_received != 0
-            ACCUM @@edges_to_display += e
-            POST-ACCUM
-                s.@num_messages_received = 0
-          POST-ACCUM
-              CASE WHEN 
-                t.@is_sender 
-              THEN
-                t.@is_repeated += TRUE
-              END;
+    WHILE from_joint_set.size() > 0 DO
+        from_joint_set = SELECT t FROM from_joint_set:s - ((User_to_Device|User_to_Payment):e) - :t
+                         WHERE t.@num_messages_received != 0
+                         ACCUM @@edges_to_display += e
+                         POST-ACCUM
+                             s.@num_messages_received = 0
+                        POST-ACCUM
+                            CASE WHEN 
+                              t.@is_sender 
+                            THEN
+                              t.@is_repeated += TRUE
+                            END;
     END;
   
     // 3. Get the transactions to output
-    Transactions = SELECT s 
-        FROM Transactions:s - (<User_Transfer_Transaction:e) - :u
-        WHERE u.@is_repeated == TRUE
-        ACCUM @@edges_to_display += e;
+    transactions = SELECT s FROM transactions:s - (<User_Transfer_Transaction:e) - :u
+                   WHERE u.@is_repeated == TRUE
+                   ACCUM @@edges_to_display += e;
   
-    // Output the result
-    PRINT Transactions [Transactions.amount] AS Related_transactions_to_rcvr;
+    PRINT transactions [transactions.amount] AS Related_transactions_to_rcvr;
     PRINT @@edges_to_display;
 }
