@@ -1,0 +1,10 @@
+CREATE QUERY README() FOR GRAPH connectivity {
+    STRING graph_description = "Social network example for understanding and analyzing relationships.";
+    STRING query_order = "No Order";
+    STRING addresses_with_most_case_reports = "addresses_with_most_case_reports.gsql - Find the top 10 addresses with the most number of case reports.";
+    STRING discover_social_connections = "discover_social_connections.gsql - This query infers all of the people a particular person knows.";
+    STRING person_knows_who = "person_knows_who.gsql - This query infers all of the people a particular person knows.";
+    STRING person_same_as_who = "person_same_as_who.gsql - This query calculates the Jaccard Similarity between a given person vertex and every other vertic.";
+    
+    PRINT graph_description, query_order, addresses_with_most_case_reports, discover_social_connections, person_knows_who, person_same_as_who;    
+}
