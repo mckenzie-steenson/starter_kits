@@ -1,25 +1,31 @@
-CREATE QUERY person_knows_who(VERTEX <Person> source) FOR GRAPH connectivity SYNTAX v2 { 
-  /* 
-  --- Dataset has been shrunk on Nov.20th,2020 ---
-  
-	Samples:
-  Source:274
-  Source:275
-  Source:276
+CREATE QUERY person_knows_who(VERTEX<Person> input_person) FOR GRAPH connectivity SYNTAX V2 { 
+/* 
+    This query infers all of the people a particular person knows.
+    
+    Sample input:
+    Source:274
+    Source:275
+    Source:276
+    
+    Starting from an "input_person",
+    (1) Select all vertices connected to the start person
+    (2) From the vertices found in step 1, select all the people connected to the input_person
+    (3) SumAccum the count of vertices from step 2 to get the total count of how many people the input_person knows
+    (4) Print the input_person and all of their acquantences
+*/
 
-	DEMO - This query infers all of the people a particular person knows */ 
-  SumAccum<int> @knows_Count;
-	SetAccum <Vertex> @@person_Set;
+    SumAccum<INT> @knows_count;
+    SetAccum <VERTEX> @@person_set;
+    
+    @@person_set+= input_person;
+    start = {input_person};
+    #start = {Person.*};
+    
+    events = SELECT event FROM start:p-(:e)-:event;
 	
-	@@person_Set+= source;
-	startPerson = {source};
-	#startPerson = {Person.*};
-  Events = SELECT event  FROM startPerson:p-(:e)-:event ;
-	
-	Acquaintences = SELECT acquaintence 
-	FROM Events:event-(:e)-Person:acquaintence 
-	WHERE acquaintence!=source
-	ACCUM acquaintence.@knows_Count += 1;
-	
-	PRINT startPerson, Acquaintences;
-	}
+    acquaintences = SELECT acquaintence FROM events:event-(:e)-Person:acquaintence 
+   		    WHERE acquaintence!=input_person
+                    ACCUM acquaintence.@knows_count += 1;
+    
+    PRINT start, acquaintences;
+}
