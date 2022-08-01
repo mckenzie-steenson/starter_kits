@@ -1,0 +1,13 @@
+CREATE QUERY README() FOR GRAPH AntiFraud {
+    STRING graph_description = "Multiple types of fraud and money laundering patterns.";
+    STRING query_order = "No Order";
+    STRING circle_detection = "circle_detection.gsql - This is an anti-money laundering query which detects money flow circle from a starting user. ";
+    STRING fraud_connectivity = "fraud_connectivity.gsql - This query gets the number of neighbors to the input user with a low trust score.";
+    STRING invited_user_behavior = "invited_user_behavior.gsql - Detect users who conduct fraudulent referrals in order to receive high amounts of referral bonuses.";
+    STRING multi_transaction = "multi_transaction.gsql - Given a transaction, this query finds the network of users related to the sender and the network of users related to the receiver then finds all transactions between the two networks.";
+    STRING repeated_user = "repeated_user.gsql - Given a money recipient, this query discovers whether there exists relationships among those people who have sent money to this receiver.";
+    STRING same_receiver_sender = "same_receiver_sender.gsql - Given an input transaction, detect any instances in which sender is connected to receiver via Device_Token or Payment_Instrument within 4 steps.";
+    STRING transferred_amount = "transferred_amount.gsql - Find out how much money has been transferred out from a user's connected users within a date range.";
+
+    PRINT graph_description, query_order, circle_detection, fraud_connectivity, invited_user_behavior, multi_transaction, repeated_user, same_receiver_sender, transferred_amount;    
+}
