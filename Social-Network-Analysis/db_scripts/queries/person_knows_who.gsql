@@ -2,10 +2,10 @@ CREATE QUERY person_knows_who(VERTEX<Person> input_person) FOR GRAPH connectivit
 /* 
     This query infers all of the people a particular person knows.
     
-    Sample input:
-    Source:274
-    Source:275
-    Source:276
+    Sample inputs:
+    input_person:274
+    input_person:275
+    input_person:276
     
     Starting from an "input_person",
     (1) Select all vertices connected to the start person
