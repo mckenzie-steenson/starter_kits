@@ -1,4 +1,4 @@
-CREATE QUERY circle_detection (VERTEX<User> source_id) FOR GRAPH AntiFraudSYNTAX v2 
+CREATE QUERY circle_detection(VERTEX<User> source_id) FOR GRAPH AntiFraudSYNTAX v2 
 {
 /*
     This is an anti-money laundering query which detects money 
