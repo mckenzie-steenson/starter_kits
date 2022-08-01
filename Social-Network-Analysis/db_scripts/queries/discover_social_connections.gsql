@@ -3,7 +3,7 @@ CREATE QUERY discover_social_connections(VERTEX<Person> input_person_a, VERTEX<P
 /* 
     This query infers all of the people a particular person knows.
     
-    Samples:
+    Sample inputs:
     input_person_a:115062  input_person_b:198915  K:6
     input_person_a:230336  input_person_b:364310  K:6
     input_person_a:246667  input_person_b:238358  K:6
