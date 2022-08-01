@@ -1,23 +1,21 @@
-CREATE QUERY multi_transaction (VERTEX<Transaction> input_transaction)
-FOR GRAPH AntiFraud SYNTAX v2 {
+CREATE QUERY multi_transaction (VERTEX<Transaction> input_transaction) FOR GRAPH AntiFraud SYNTAX V2 {
 /*
-    Given a transaction, it finds the network of users related to the sender
-    and the network of users related to the receiver. Then, it  finds all
-    transactions between the two networks.
-
-  If the tranaction is part of a money laundering scheme, this query helps
-  data analysts discover and visualize the pattern of transactions.
+    Given a transaction, this query finds the network of users related to the sender
+    and the network of users related to the receiver then finds all transactions between the two networks.
   
-    1) Starting from a given transaction, find its sender and receiver.
-    2) Starting from the sender, traverse 4 steps via Device_Token and
+    Sample input :
+    (with transactions between networks) input_transaction: 32, 33, 37 
+    (without transactions between networks) input_transaction: most others
+    
+    Starting from an "input_transaction", 
+    (1) Find its sender and receiver.
+    (2) Starting from the sender, traverse 4 steps via Device_Token and
     Payment_Instrument edges to find connected Users.
-    3) Starting from the receiver, traverse 4 steps via Device_Token and
+    (3) Starting from the receiver, traverse 4 steps via Device_Token and
     Payment_Instrument edges to find connected Users.
-    4) Detect transactions between the sender and receiver networks.
+    (4) Detect transactions between the sender and receiver networks.
 
-    Sample input:
-    * with transactions between networks: 32, 33, 37 
-    * without transactions between networks: most others
+   
 */  
 
     OrAccum<BOOL> @from_receiver, @from_sender;
@@ -25,72 +23,72 @@ FOR GRAPH AntiFraud SYNTAX v2 {
     SetAccum<EDGE> @@edges_to_display;
     INT MAX_HOPS = 4;
   
-  // Assign the input transaction to the "Start" variable, which is a SET.
-  Start (ANY) = {input_transaction};
+    // Assign the input transaction to the "start" variable, which is a SET.
+    start (ANY) = {input_transaction};
 
     // 1. Find and mark the sender and receiver of the input transaction
-  Sender_receiver (ANY) = SELECT t 
-        FROM Start:s
-            - ((<User_Receive_Transaction|<User_Transfer_Transaction):e) - :t
-        ACCUM
-            CASE WHEN 
-                e.type == "User_Receive_Transaction" 
-            THEN
-                t.@from_receiver += TRUE,
-                @@receiver_set += t
-            ELSE
-                t.@from_sender += TRUE,
-                @@sender_set += t
-            END,
-            @@edges_to_display += e;
+    Sender_receiver (ANY) = SELECT t 
+          FROM start:s
+              - ((<User_Receive_Transaction|<User_Transfer_Transaction):e) - :t
+          ACCUM
+              CASE WHEN 
+                  e.type == "User_Receive_Transaction" 
+              THEN
+                  t.@from_receiver += TRUE,
+                  @@receiver_set += t
+              ELSE
+                  t.@from_sender += TRUE,
+                  @@sender_set += t
+              END,
+              @@edges_to_display += e;
 
-    // 2. Find the sender and receiver networks.
-    WHILE Sender_receiver.size() > 0 LIMIT MAX_HOPS DO
-        Sender_receiver = SELECT t 
-        FROM Sender_receiver:s - ((User_to_Device|User_to_Payment):e) - :t
-        WHERE t.@from_receiver == FALSE AND t.@from_sender == FALSE
+      // 2. Find the sender and receiver networks.
+      WHILE Sender_receiver.size() > 0 LIMIT MAX_HOPS DO
+          Sender_receiver = SELECT t 
+          FROM Sender_receiver:s - ((User_to_Device|User_to_Payment):e) - :t
+          WHERE t.@from_receiver == FALSE AND t.@from_sender == FALSE
+          ACCUM 
+              t.@from_receiver += s.@from_receiver,
+              t.@from_sender += s.@from_sender,
+              @@edges_to_display += e
+          POST-ACCUM
+              CASE WHEN 
+                  t.type == "User" AND t.@from_sender == TRUE 
+              THEN
+                  @@sender_set += t
+              WHEN 
+                  t.@from_receiver == TRUE 
+              THEN
+                  @@receiver_set += t
+                END
+          HAVING t.@from_receiver OR t.@from_sender;
+      END;
+
+      // 3. Mark transactions connected to the receiver set.
+      Receivers = {@@receiver_set};
+      Receivers = SELECT t 
+          FROM Receivers:s
+              - ((User_Receive_Transaction>|User_Transfer_Transaction>):e) - :t
+        WHERE t != input_transaction
         ACCUM 
             t.@from_receiver += s.@from_receiver,
-            t.@from_sender += s.@from_sender,
-            @@edges_to_display += e
-        POST-ACCUM
-            CASE WHEN 
-                t.type == "User" AND t.@from_sender == TRUE 
-            THEN
-                @@sender_set += t
-            WHEN 
-                t.@from_receiver == TRUE 
-            THEN
-                @@receiver_set += t
-              END
-        HAVING t.@from_receiver OR t.@from_sender;
-    END;
+            @@edges_to_display += e;
 
-    // 3. Mark transactions connected to the receiver set.
-    Receivers = {@@receiver_set};
-    Receivers = SELECT t 
-        FROM Receivers:s
-            - ((User_Receive_Transaction>|User_Transfer_Transaction>):e) - :t
-      WHERE t != input_transaction
-      ACCUM 
-          t.@from_receiver += s.@from_receiver,
-          @@edges_to_display += e;
-
-    // 4. Mark transactions connected to the sender set.
-    // Select transactions marked by both the sender set and receiver set.
-    Senders = {@@sender_set};
-    Connecting_transactions = SELECT t 
-        FROM Senders:s
-            - ((User_Receive_Transaction>|User_Transfer_Transaction>):e) - :t
-        WHERE t != input_transaction
-        ACCUM
-            t.@from_sender += s.@from_sender,
-            @@edges_to_display += e
-        HAVING t.@from_receiver AND t.@from_sender;
- 
-    // Print transactions which connect sender and receiver networks
-    PRINT Connecting_transactions;
-  
-    // Print the sender and receiver networks
-    PRINT @@edges_to_display;
+      // 4. Mark transactions connected to the sender set.
+      // Select transactions marked by both the sender set and receiver set.
+      Senders = {@@sender_set};
+      Connecting_transactions = SELECT t 
+          FROM Senders:s
+              - ((User_Receive_Transaction>|User_Transfer_Transaction>):e) - :t
+          WHERE t != input_transaction
+          ACCUM
+              t.@from_sender += s.@from_sender,
+              @@edges_to_display += e
+          HAVING t.@from_receiver AND t.@from_sender;
+    
+      // Print transactions which connect sender and receiver networks
+      PRINT Connecting_transactions;
+    
+      // Print the sender and receiver networks
+      PRINT @@edges_to_display;
 }
